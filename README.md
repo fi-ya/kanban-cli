@@ -1,10 +1,15 @@
 # Kanban CLI
 
-A local terminal-based Kanban task manager for the CoSpace planning exercise.
+A simple terminal-based Kanban task manager for the CoSpace planning exercise.
 
-## How to Run
+## Requirements
 
-From the project folder, run:
+- Python 3
+- No external packages are required
+
+## Run The App
+
+From this project folder, run:
 
 ```bash
 python kanban_cli.py
