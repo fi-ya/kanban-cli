@@ -4,6 +4,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from planner_core import (
+    ValidationError,
+    add_retro_card,
+    complete_sprint,
+    create_sprint,
+    create_task as create_planner_task,
+    load_state,
+    save_state,
+    show_state,
+    start_sprint,
+)
+
 
 STATUSES = ("To Do", "In Progress", "Done")
 IN_PROGRESS_LIMIT = 2
@@ -90,8 +102,61 @@ def print_help() -> None:
     print("  add     Add a task")
     print("  move    Move a task to the next column")
     print("  board   Show the board")
+    print("  sprint-create    Create a Planning sprint")
+    print("  sprint-start     Start a sprint")
+    print("  sprint-task      Add a task to an Active sprint")
+    print("  sprint-complete  Complete a sprint")
+    print("  retro-add        Add a retrospective card")
+    print("  state            Show sprint state.json")
     print("  help    Show commands")
     print("  quit    Exit")
+
+
+def run_planner_command(command: str) -> None:
+    try:
+        state = load_state()
+
+        if command == "sprint-create":
+            sprint = create_sprint(state, input("Sprint name: "))
+            save_state(state)
+            print(f"Created {sprint['id']} in {sprint['status']}.")
+            return
+
+        if command == "sprint-start":
+            sprint = start_sprint(state, input("Sprint ID: ").strip())
+            save_state(state)
+            print(f"Started {sprint['id']}.")
+            return
+
+        if command == "sprint-task":
+            sprint_id = input("Sprint ID: ").strip()
+            title = input("Task title: ")
+            description = input("Task description: ")
+            task = create_planner_task(state, title, description, sprint_id=sprint_id)
+            save_state(state)
+            print(f"Added {task['id']} to {sprint_id}.")
+            return
+
+        if command == "sprint-complete":
+            sprint = complete_sprint(state, input("Sprint ID: ").strip())
+            save_state(state)
+            print(f"Completed {sprint['id']}; unfinished work returned to backlog.")
+            return
+
+        if command == "retro-add":
+            sprint_id = input("Sprint ID: ").strip()
+            print("Categories: Went Well, To Improve, Action Item")
+            category = input("Category: ").strip()
+            text = input("Card text: ")
+            card = add_retro_card(state, sprint_id, category, text)
+            save_state(state)
+            print(f"Added {card['id']} to {sprint_id}.")
+            return
+
+        if command == "state":
+            print(show_state(state))
+    except ValidationError as error:
+        print(f"Error: {error}")
 
 
 def main() -> None:
@@ -123,6 +188,17 @@ def main() -> None:
         if command == "move":
             title = input("Task title: ")
             print(board.move_task_forward(title))
+            continue
+
+        if command in {
+            "sprint-create",
+            "sprint-start",
+            "sprint-task",
+            "sprint-complete",
+            "retro-add",
+            "state",
+        }:
+            run_planner_command(command)
             continue
 
         print("Unknown command. Type 'help' to see available commands.")
