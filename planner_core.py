@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -217,6 +218,60 @@ def show_state(state: dict[str, Any]) -> str:
     return json.dumps(normalize_state(state), indent=2)
 
 
+def run_interactive() -> None:
+    while True:
+        print("\nCoSpace Planner")
+        print("1. Create a sprint")
+        print("2. Start a sprint")
+        print("3. Add a task to an active sprint")
+        print("4. Complete a sprint")
+        print("5. Add a retrospective card")
+        print("6. Show state")
+        print("7. Quit")
+
+        choice = input("Choose an option: ").strip()
+        if choice == "7":
+            print("Goodbye.")
+            return
+
+        try:
+            state = load_state()
+
+            if choice == "1":
+                sprint = create_sprint(state, input("Sprint name: "))
+                save_state(state)
+                print(f"Created {sprint['id']} in {sprint['status']}.")
+            elif choice == "2":
+                sprint = start_sprint(state, input("Sprint ID: ").strip())
+                save_state(state)
+                print(f"Started {sprint['id']}.")
+            elif choice == "3":
+                sprint_id = input("Sprint ID: ").strip()
+                title = input("Task title: ")
+                description = input("Task description: ")
+                task = create_task(state, title, description, sprint_id=sprint_id)
+                save_state(state)
+                print(f"Added {task['id']} to {sprint_id}.")
+            elif choice == "4":
+                sprint = complete_sprint(state, input("Sprint ID: ").strip())
+                save_state(state)
+                print(f"Completed {sprint['id']}; unfinished work returned to backlog.")
+            elif choice == "5":
+                sprint_id = input("Sprint ID: ").strip()
+                print("Categories: Went Well, To Improve, Action Item")
+                category = input("Category: ").strip()
+                text = input("Card text: ")
+                card = add_retro_card(state, sprint_id, category, text)
+                save_state(state)
+                print(f"Added {card['id']} to {sprint_id}.")
+            elif choice == "6":
+                print(show_state(state))
+            else:
+                print("Choose a number from 1 to 7.")
+        except ValidationError as error:
+            print(f"Error: {error}")
+
+
 def run_demo() -> None:
     state = deepcopy(DEFAULT_STATE)
 
@@ -287,6 +342,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    if len(sys.argv) == 1:
+        run_interactive()
+        return
+
     parser = build_parser()
     args = parser.parse_args()
 
